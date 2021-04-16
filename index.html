@@ -105,13 +105,20 @@
 <script>
     document.addEventListener('keydown', e => {
         if(e.keyCode == 32) play();
-        if(e.key.toLocaleLowerCase() == 'z' && e.ctrlKey) undo();
+        if(e.key.toLocaleLowerCase() == 'z' && e.ctrlKey || e.metaKey && e.key.toLocaleLowerCase() == 'z') undo();
     })
 
     let speed = 300;
 
     function undo() {
+        let notes = document.getElementById('notes').value;
+        let savedNotes = notes;
         document.getElementById('notes').value = document.getElementById('notes').value.replace(/[a-g]\d,? $/,'');
+        notes = document.getElementById('notes').value;
+        if(notes == savedNotes) {
+            document.getElementById('notes').value = document.getElementById('notes').value.replace(/., $/,'');
+            document.getElementById('notes').value += ' ';
+        }
     }
 
     function addKey(key, e=event){
