@@ -10,11 +10,10 @@
             background-color: rgb(30,30,30);
             color: #ccc;
             text-align: center;
+            user-select: none;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
-        #piano{
-            
-        }
+
         .keys{
             position: relative;
             cursor: pointer;
@@ -22,8 +21,8 @@
             transition: all 0.1s;
         }
         .keys:hover{
-            /*transform: translateY(5px);*/
-            opacity: 0.8;
+            transform: translateY(5px);
+            /* opacity: 0.8; */
         }
         .whitekeys{
             background-color: white;
@@ -35,114 +34,172 @@
             background-color: black;
             height: 100px;
             width: 20px;
-            position: absolute;
-            right: -12px;
             z-index: 2;
+            margin: 0 -10px 85px;
         }
         #notes{
-            width: 494px;
+            width: 463px;
             height: 100px;
             position: relative;
-            left: 2em;
+            left: 4em;
         }
 
-        #delete-button {
+        .delete-button {
             margin-left: 10px;
-            border-top-right-radius: 5px;
-            border-bottom-right-radius: 5px;
+            border-radius: 3px;
             border: 3px solid rgb(207, 7, 7);
-            background-color:rgb(27, 27, 27);
+            background: none;
             color:rgb(207, 7, 7);
             height: 40px;
             width: 40px;
             font-size: 30px;
             position: relative;
-            left: 1em;
-            top: -1em;
+            left: 2em;
             cursor: pointer;
             transition: all 0.1s;
+            bottom: 8px;
         }
 
-        #delete-button:hover {
+        .delete-button:hover {
             transform: translateY(-3px);
             opacity: 0.7;
+        }
+
+        #delete-all {
+            position: relative;
+            bottom: 60px;
+            left: 7px;
+        }
+
+        .record {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background-color: #aaa;
+            transition: all 0.2s;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.7);
+        }
+        .record:hover {
+            cursor: pointer;
+            opacity: 0.8;
+        }
+
+        .armed {
+            background-color: red;
+        }
+
+        #play {
+            cursor: pointer;
+            height: 40px;
+            width: 70px;
+            background-color: rgb(27, 27, 27);
+            color: rgb(121, 203, 231);
+            border: 4px solid rgb(121, 203, 231);
+            font-size: 18px;
+            border-radius: 5px;
         }
     </style>
 </head>
 <body>
+    <div class="record" onclick="this.classList.toggle('armed')"></div>
     <h1>Sefira Music Creator</h1>
     <div id="piano">
-        <div class="keys whitekeys" oncontextmenu="addKey('c1')" onclick="addKey('c1,')">
-            <div class="keys blackkeys"></div>
-        </div>
-        <div class="keys whitekeys" oncontextmenu="addKey('d1')" onclick="addKey('d1,')">
-            <div class="keys blackkeys"></div>
-        </div>
-        <div class="keys whitekeys" oncontextmenu="addKey('e1')" onclick="addKey('e1,')"></div>
-        <div class="keys whitekeys" oncontextmenu="addKey('f1')" onclick="addKey('f1,')">
-           <div class="keys blackkeys"></div>
-        </div>
-        <div class="keys whitekeys" oncontextmenu="addKey('g1')" onclick="addKey('g1,')">
-            <div class="keys blackkeys"></div>
-        </div>
-        <div class="keys whitekeys" oncontextmenu="addKey('a2')" onclick="addKey('a2,')">
-            <div class="keys blackkeys"></div>
-        </div>
-        <div class="keys whitekeys" oncontextmenu="addKey('b2')" onclick="addKey('b2,')"></div>
-        <div class="keys whitekeys" oncontextmenu="addKey('c2')" onclick="addKey('c2,')">
-            <div class="keys blackkeys"></div>
-        </div>
-        <div class="keys whitekeys" oncontextmenu="addKey('d2')" onclick="addKey('d2,')">
-            <div class="keys blackkeys"></div>
-        </div>
-        <div class="keys whitekeys" oncontextmenu="addKey('e2')" onclick="addKey('e2,')"></div>
         <div class="keys whitekeys" onclick="addKey(',')" style="background-color: gray;"></div>
     </div>
     <textarea id="notes" placeholder="Click on keyboard to input notes"></textarea>
-    <button id="delete-button" onclick="undo()">&times;</button>
+    <button class="delete-button" id="delete-one" onclick="undo()">&times;</button>
+    <button class="delete-button" id="delete-all" onclick="undoAll()"><img src="" alt=""></button>
 <br>
-<button onclick="play()">Play!</button>
+<button onclick="play()" id="play">Play</button>
+<input type="range" min="1" max="500" id="speed" title="Speed" value="120" onchange="updateSpeed(this.value)">
+<span id="speedOutput"></span>
 <script>
+
+    const kb = {
+        'a': 'c1',
+        'w': 'c%231',
+        's': 'd1',
+        'e': 'd%231',
+        'd': 'e1',
+        'f': 'f1',
+        't': 'f%231',
+        'g': 'g1',
+        'y': 'g%231',
+        'h': 'a2',
+        'u': 'a%232',
+        'j': 'b2',
+        'k': 'c2',
+        'o': 'c%232',
+        'l': 'd2',
+        'p': 'd%232',
+        ';': 'e2',
+        '\'': ''
+    }
+
+    pianoHTML = '';
+    for(note of Object.values(kb)) {
+        if(note.match(/[a-g]\d/)) {
+            pianoHTML += `<div class="keys whitekeys" oncontextmenu="addKey('${note}')" onclick="addKey('${note},')"></div>`;
+        }
+        else if(note.match(/[a-g]%23\d/)) {
+            pianoHTML += `<div class="keys blackkeys" oncontextmenu="addKey('${note}')" onclick="addKey('${note},')"></div>`;
+        }
+    }
+    document.getElementById('piano').innerHTML = pianoHTML + document.getElementById('piano').innerHTML;
+
     document.addEventListener('keydown', e => {
         if(e.keyCode == 32) play();
-        if(e.key.toLocaleLowerCase() == 'z' && e.ctrlKey || e.metaKey && e.key.toLocaleLowerCase() == 'z') undo();
-    })
-
-    let speed = 300;
+        if(e.key.toLocaleLowerCase() == 'z' && e.ctrlKey) undo();
+        if(e.key.toLocaleLowerCase() in kb) {
+            const note = kb[e.key.toLocaleLowerCase()];
+            playNote(note);
+            if(document.querySelector('.record').classList.contains('armed')) {
+                document.getElementById('notes').value += note;
+                if(e.shiftKey)
+                    document.getElementById('notes').value += ' ';
+                else
+                    document.getElementById('notes').value += ', ';
+            }
+        }
+    });
+    function updateSpeed(bpm) {
+        document.getElementById('speedOutput').innerHTML = bpm + " BPM"; 
+        speed = 60000 / bpm;
+    }
+    updateSpeed(document.getElementById('speed').value);
+    let playing = false;
 
     function undo() {
-        let notes = document.getElementById('notes').value;
-        let savedNotes = notes;
-        document.getElementById('notes').value = document.getElementById('notes').value.replace(/[a-g]\d,? $/,'');
-        notes = document.getElementById('notes').value;
-        if(notes == savedNotes) {
-            document.getElementById('notes').value = document.getElementById('notes').value.replace(/., $/,'');
-            document.getElementById('notes').value += ' ';
-        }
+        document.getElementById('notes').value = document.getElementById('notes').value.replace(/(?:[a-g]\d)?,? $/,'');
+    }
+    function undoAll() {
+        document.getElementById('notes').value = '';
     }
 
     function addKey(key, e=event){
         e.preventDefault();
-        document.getElementById('notes').value += key + " ";
+        if(document.querySelector('.record').classList.contains('armed'))
+            document.getElementById('notes').value += key + " ";
+        if(key.match(/[a-g](?:%23)?\d/)) 
+            playNote(key.replace(/[^a-g%1-3]/g, ''));
     }
     async function play(){
-        allNotes = document.getElementById('notes').value.split(', ');
-        for(i=0;i<allNotes.length;i++){
-            allNotes[i].split(' ').forEach(note => {
-            if(note.length>1) {
-                let sound = new Audio();
-                sound.src = 'voices/'+note+'.wav';
-                sound.play();
+        playing = true;
+        if(playing) {
+            allNotes = document.getElementById('notes').value.split(', ');
+            for(i=0;i<allNotes.length;i++){
+                allNotes[i].split(' ').forEach(note => {
+                if(note.length>1) {
+                    playNote(note);
+                }
+                });
+                await sleep(speed);
             }
-            });
-            await sleep(speed);
         }
-        /*allNotes.forEach(async (note) => {
-            if(note.length<2) {return;}
-           // voices[note].play();\
-            await sleep(1000);
-            //voices[note].pause();
-            });*/
+
     }
     async function delay(ms){
         return new Promise(resolve=>{
@@ -150,10 +207,14 @@
             });
     }
 
-    //const sleep = (delay) => new Promise((resolve) => setTimeout(resolve, delay));
-
     function sleep(ms){
         return new Promise(r=>setTimeout(r,ms));
+    }
+
+    function playNote(note) {
+        let sound = new Audio();
+        sound.src = 'voices/'+note+'.wav';
+        sound.play();
     }
 
 </script>
